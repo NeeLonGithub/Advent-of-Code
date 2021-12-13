@@ -13,8 +13,6 @@ folds.forEach((fold) => {
     console.log(dots.length)
 })
 
-console.log(dots);
-
 let maxX = -Infinity
 let maxY = -Infinity
 dots.forEach((dot) => {
