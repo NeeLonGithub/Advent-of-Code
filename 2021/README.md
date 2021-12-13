@@ -1,4 +1,4 @@
-# Advent of Code
+# Advent of Code - 2021
 This year my goal was to get to the solution as fast as I could, using JavaScript.
 
 For every challenge, the input was copy+pasted in the corresponding file and with the IDE tools turned into a usable JavaScript literal.
