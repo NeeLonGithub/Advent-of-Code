@@ -87,30 +87,23 @@ const printBoard = (board) => {
 
 const players = new Map()
 
-const getPlayer = (x, y, turn, visitedStart, visitedEnd) => {
-    const key = `x:${x} y:${y} turn:${turn%cycleLength} ${visitedStart} ${visitedEnd}`
-    console.log(key);
+const getPlayer = (x, y, turn) => {
+    const key = `x:${x} y:${y} turn:${turn%cycleLength}`
     if (!players.has(key)) {
-        players.set(key, new Player(x, y, turn, visitedStart, visitedEnd))
+        players.set(key, new Player(x, y, turn))
         return players.get(key)
     } else {
         return undefined
     }
 
 }
-
-
-
-let foundEnd = false
-
 class Player {
-    constructor(x, y, turn, visitedStart, visitedEnd) {
+    constructor(x, y, turn) {
         this.x = x
         this.y = y
         this.turn = turn
-        this.visitedEnd = visitedEnd || x === goal[0] && y === goal[1]
-        this.visitedStart = visitedStart || (this.visitedEnd && x === start[0] && y === start[1])
-        foundEnd = visitedStart && visitedEnd && x === goal[0] && y === goal[1]
+        this.foundEnd = x === goal[0] && y === goal[1]
+        // this.foundEnd = x === start[0] && y === start[1]
     }
 
     getOptions() {
@@ -118,13 +111,10 @@ class Player {
         const options = []
         const moves = [[this.x, this.y], [this.x+1, this.y], [this.x, this.y+1], [this.x-1, this.y], [this.x, this.y-1]]
         moves.forEach(([x, y]) => {
-
-            // if (board[y] === undefined) {
-            //     console.log(`${x}, ${y}`)
-            //     printBoard(board)
-            // }
-            const player = getPlayer(x, y, this.turn+1, this.visitedStart, this.visitedEnd)
-            if (player !== undefined && y >= 0 && y < input.length && board[y][x] === '.') {
+            // console.log(`${x}, ${y}`);
+            // printBoard(board)
+            const player = getPlayer(x, y, this.turn+1)
+            if (player !== undefined && y >= 0 &&  y < input.length && board[y][x] === '.') {
                 options.push(player)
             }
         })
@@ -134,15 +124,16 @@ class Player {
 
 
 
-let searches = [new Player(start[0], start[1], 0, false, false)]
+let player = new Player(start[0], start[1], 0)
 
-let player
-while (!foundEnd) {
+let searches = [player]
+// let searches = [new Player(goal[0], goal[1], 41)]
+// let searches = [new Player(start[0], start[1], 0)]
+
+console.log(goal);
+while (!player.foundEnd) {
     player = searches.shift()
-    if (searches.length === 0) console.log(player);
     searches.push(...player.getOptions())
 }
 
-console.log(player.turn+1);
-
-// 740 is too high
+console.log(player.turn);
