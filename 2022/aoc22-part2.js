@@ -12,31 +12,32 @@ const instructions = usingTest ? testInstructions : realInstructions
 
 let direction = 0
 
-const getWrappedStep = (x, y) => {
+const getWrappedStep = (x, y, direction) => {
     let newX = x
     let newY = y
+    let newDirection = direction
     switch (direction) {
         case 0: { // right
             newX++
             if(newX === 150 && newY >= 0 && newY < 50) {
                 newY = 149 - newY  // 0 -> 149 1 -> 148 ... 49 -> 100
                 newX = 99
-                direction = 2   // left
+                newDirection = 2   // left
             }
             if(newX === 100 && newY >= 100 && newY < 150) {
                 newY = 149 - newY  // 0 <- 149 1 <- 148 ... 49 <- 100
                 newX = 149
-                direction = 2   // left
+                newDirection = 2   // left
             }
             if(newX === 100 && newY >= 50 && newY < 100) {
                 newX = 50 + newY   // y50 -> x100 y51 -> x101 ... y99 -> x149
                 newY = 49
-                direction = 3   // up
+                newDirection = 3   // up
             }
             if(newX === 50 && newY >= 150 && newY < 200) {
                 newX = newY - 100  // y150 -> x50 y151 -> x51 ... y199 -> x99
                 newY = 149
-                direction = 3   // up
+                newDirection = 3   // up
             }
             break
         }
@@ -45,17 +46,17 @@ const getWrappedStep = (x, y) => {
             if(newX >= 100 && newX < 150 && newY === 50) {
                 newY = newX - 50   // y50 <- x100 y51 <- x101 ... y99 <- x149
                 newX = 99
-                direction = 2   // left
+                newDirection = 2   // left
             }
             if(newX >= 50 && newX < 100 && newY === 150) {
                 newY = newX + 100  // y150 <- x50 y151 <- x51 ... y199 <- x99
                 newX = 49
-                direction = 2   // left
+                newDirection = 2   // left
             }
             if(newX >= 0 && newX < 50 && newY === 200) {
                 newX = newX + 100  // y150 <- x50 y151 <- x51 ... y199 <- x99
                 newY = 0
-                direction = 1   // down
+                newDirection = 1   // down
             }
             break
         }
@@ -64,22 +65,22 @@ const getWrappedStep = (x, y) => {
             if(newX === -1 && newY >= 100 && newY < 150) {
                 newY = 149 - newY  // 100 -> 49 101 -> 48 ... 149 -> 0
                 newX = 50
-                direction = 0   // right
+                newDirection = 0   // right
             }
             if(newX === 49 && newY >= 0 && newY < 50) {
                 newY = 149 - newY  // 100 <- 49 101 <- 48 ... 149 <- 0
                 newX = 0
-                direction = 0   // right
+                newDirection = 0   // right
             }
             if(newX === -1 && newY >= 150 && newY < 200) {
                 newX = newY - 100  // x50 <- y150 x51 <- y151 ... x99 <- 199
                 newY = 0
-                direction = 1   // down
+                newDirection = 1   // down
             }
             if(newX === 49 && newY >= 50 && newY < 100) {
                 newX = newY - 50       // x0 <- y50 x1 <- y51 ... x49 <- y99
                 newY = 100
-                direction = 1   // down
+                newDirection = 1   // down
             }
             break
         }
@@ -88,55 +89,25 @@ const getWrappedStep = (x, y) => {
             if(newX >= 0 && newX < 50 && newY === 99) {
                 newY = newX + 50   // x0 -> y50 x1 -> y51 ... x49 -> y99
                 newX = 50
-                direction = 0   // right
+                newDirection = 0   // right
             }
             if(newX >= 50 && newX < 100 && newY === -1) {
                 newY = newX + 100  // x50 -> y150 x51 -> y151 ... x99 -> 199
                 newX = 0
-                direction = 0   // right
+                newDirection = 0   // right
             }
             if(newX >= 100 && newX < 150 && newY === -1) {
                 newX = newX - 100  // y150 -> x50 y151 -> x51 ... y199 -> x99
                 newY = 199
-                direction = 3   // up
+                newDirection = 3   // up
             }
             break
         }
         default: {
-            console.assert(false, `\n\n\nx: ${newX}, y: ${newY}, direction: ${direction}\n\n\n`)
+            console.assert(false, `\n\n\nx: ${newX}, y: ${newY}, direction: ${newDirection}\n\n\n`)
         }
     }
-    return {x: newX, y: newY}
-}
-
-const step = (x, y) => {
-    let newX = x
-    let newY = y
-    switch (direction) {
-        case 0: { // right
-            newX = (x+1) % input[y].length
-            break
-        }
-        case 1: { // down
-            newY = (y+1) % input.length
-            break
-        }
-        case 2: { // left
-            newX = (x-1)
-            if (newX < 0) {
-                newX = input[y].length - 1
-            }
-            break
-        }
-        case 3: { // up
-            newY = (y-1)
-            if (newY < 0) {
-                newY = input.length - 1
-            }
-        }
-    }
-
-    return [newX, newY]
+    return {x: newX, y: newY, direction: newDirection}
 }
 
 const getCharAt = (x, y) => {
@@ -150,7 +121,7 @@ const walk = (paces) => {
 
         let char = undefined
 
-        const {x: newX, y: newY} = getWrappedStep(x, y)
+        const {x: newX, y: newY, direction: newDirection} = getWrappedStep(x, y, direction)
         char = getCharAt(newX, newY)
 
         console.assert(char !== undefined, `x: ${newX}, y: ${newY}`)
@@ -159,6 +130,7 @@ const walk = (paces) => {
         if (char !== '#') {
             x = newX
             y = newY
+            direction = newDirection
         } else {
             break
         }
@@ -187,3 +159,4 @@ console.log(`${y + 1} * 1000 + ${x + 1} * 4 + ${direction} = ${(y + 1) * 1000 + 
 // 114 * 1000 + 90 * 4 + 3 = 114363 is too low
 // 158 * 1000 + 21 * 4 + 3 = 158087 is too high
 // 130 * 1000 + 65 * 4 + 2 = 130262 is too high
+// 127 * 1000 + 3 * 4 + 0 = 127012 is correct
