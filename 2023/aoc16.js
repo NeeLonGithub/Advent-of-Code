@@ -97,27 +97,77 @@ class Beam {
     }
 }
 
-const stoppedBeams = []
-
-beams.push(new Beam())
-
-while (beams.length) {
-    const beam = beams.shift()
-    beam.step()
-    beam.act()
-    if (beam.stopped) stoppedBeams.push(beam)
-    else beams.push(beam)
-}
-
 const getXY = (x,y) => `x${x} y${y}`
 
-const energized = []
+const getEnergized = (initialBeam) => {
+    beams.length = 0
+    history.length = 0
 
-history.forEach((entry) => {
-    const [x, y, _] = entry.split(' ')
-    const xy = getXY(x, y)
-    if (!energized.includes(xy)) energized.push(xy)
-})
+    beams.push(initialBeam)
 
+    while (beams.length) {
+        const beam = beams.shift()
+        beam.step()
+        beam.act()
+        if (!beam.stopped) beams.push(beam)
+    }
 
-console.log(energized.length)
+    const energized = []
+
+    history.forEach((entry) => {
+        const [x, y, _] = entry.split(' ')
+        const xy = getXY(x, y)
+        if (!energized.includes(xy)) energized.push(xy)
+    })
+
+    return energized.length
+}
+
+console.time()
+
+let best = 0
+
+for (let i = 0; i < lengthX; i++) {
+    console.log(`horizontal ${i}`)
+    let beam = new Beam()
+    beam.x = i
+    beam.y = -1
+    beam.direction = 'downwards'
+
+    let energized = getEnergized(beam)
+
+    best = Math.max(best, energized)
+
+    beam = new Beam()
+    beam.x = i
+    beam.y = lengthY
+    beam.direction = 'upwards'
+
+    energized = getEnergized(beam)
+
+    best = Math.max(best, energized)
+}
+
+for (let i = 0; i < lengthY; i++) {
+    console.log(`vertical ${i}`)
+    let beam = new Beam()
+    beam.x = -1
+    beam.y = i
+    beam.direction = 'to the right'
+
+    let energized = getEnergized(beam)
+
+    best = Math.max(best, energized)
+
+    beam = new Beam()
+    beam.x = lengthX
+    beam.y = i
+    beam.direction = 'to the left'
+
+    energized = getEnergized(beam)
+
+    best = Math.max(best, energized)
+}
+
+console.timeEnd()
+console.log(best)
