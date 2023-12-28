@@ -8,7 +8,7 @@ const city = raw.split('\n')
 const lengthX = city[0].length
 const lengthY = city.length
 
-class Crucible {
+class UltraCrucible  {
     constructor() {
         this.x = 0
         this.y = 0
@@ -25,7 +25,7 @@ class Crucible {
     }
 
     getClone() {
-        const clone = new Crucible()
+        const clone = new UltraCrucible()
         clone.x = this.x
         clone.y = this.y
         clone.heatLoss = this.heatLoss
@@ -34,9 +34,16 @@ class Crucible {
     }
 
     canContinueStraight() {
-        if (this.history.length < 3) return true
+        if (this.history.length < 10) return true
+        const last = this.history.at(-1)
+        return this.history.slice(-10).some(element => element !== last)
+    }
 
-        return this.history.at(-1) !== this.history.at(-2) || this.history.at(-2) !== this.history.at(-3)
+    canTurn() {
+        if (this.history.length < 4) return false
+        const last = this.history.at(-1)
+
+        return this.history.at(-2) === last && this.history.at(-3) === last && this.history.at(-4) === last
     }
 
     getOptions() {
@@ -46,10 +53,12 @@ class Crucible {
         if (this.canContinueStraight()) {
             options.push(this.history.at(-1))
         }
-        if (this.history.at(-1) === 'U' || this.history.at(-1) === 'D') {
-            options.push('R', 'L')
-        } else {
-            options.push('D', 'U')
+        if (this.canTurn()) {
+            if (this.history.at(-1) === 'U' || this.history.at(-1) === 'D') {
+                options.push('R', 'L')
+            } else {
+                options.push('D', 'U')
+            }
         }
 
         if (this.x === 0) options = options.filter((direction) => direction !== 'L')
@@ -77,8 +86,12 @@ class Crucible {
     getKey() {
         if (this.history.length === 0) return `${this.x} ${this.y} _ 0`
 
-        const straightSteps = this.history.at(-1) !== this.history.at(-2) ? 1 : this.history.at(-2) !== this.history.at(-3) ? 2 : 3
-        return `${this.x} ${this.y} ${this.history.at(-1)} ${straightSteps}`
+        let straightSteps = 1
+        const last = this.history.at(-1)
+
+        while (this.history.at(-1 * ++straightSteps) === last) {}
+
+        return `${this.x} ${this.y} ${last} ${straightSteps - 1}`
     }
 }
 
@@ -91,7 +104,7 @@ const crucibleSorter = (a, b) => {
 
 const map = {}
 
-const crucibles = [new Crucible()]
+const crucibles = [new UltraCrucible()]
 
 let crucible
 let counter = 0
@@ -123,9 +136,11 @@ while (crucibles.length > 0) {
 
     if (++counter === 100000) {
         counter = 0
-        console.timeLog('search', crucibles.length, Object.keys(map).length / ((lengthX -1) * (lengthY - 1) * 4 * 3))
+        console.timeLog('search', crucibles.length, Object.keys(map).length / ((lengthX -1) * (lengthY - 1) * 4 * 10))
     }
 }
+
+console.timeEnd('search')
 
 Object.values(map)
     .filter((crucible) => crucible.x === lengthX -1 && crucible.y === lengthY - 1)
@@ -135,8 +150,3 @@ Object.values(map)
             console.log(crucible.getKey(), crucible.heatLoss)
         }
 )
-
-console.timeEnd('search')
-
-// 1110 too high
-//
