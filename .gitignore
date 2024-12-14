@@ -1,5 +1,7 @@
 *.input
 *.help.*
 
+session-token.txt
+
 .DS_Store
 .idea
