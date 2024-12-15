@@ -2,28 +2,68 @@ import fs from 'fs'
 
 // const raw = fs.readFileSync('2024/aoc15.example', 'utf8').slice(0, -1)
 // const raw = fs.readFileSync('2024/aoc15.example2', 'utf8').slice(0, -1)
+// const raw = fs.readFileSync('2024/aoc15.example3', 'utf8').slice(0, -1)
 const raw = fs.readFileSync('2024/aoc15.input', 'utf8').slice(0, -1)
 
 const [map, moves] = raw.split('\n\n')
 
 
 const warehouse = new Map()
+
+const printWarehouse = () => {
+    const width = map.split('\n')[0].length * 2
+    const height = map.split('\n').length
+    const print = []
+
+    for (let i = 0; i < height; i++) {
+        const row = []
+        for (let j = 0; j < width; j++) {
+            row.push(' ')
+        }
+        print.push(row)
+    }
+
+    warehouse.forEach((value) => {
+        if (value.constructor.name === 'Wall') print[value.row][value.column] = '#'
+        if (value.constructor.name === 'Fish') print[value.row][value.column] = '@'
+        if (value.constructor.name === 'Box') {
+            print[value.row][value.column] = '['
+            print[value.row][value.column+1] = ']'
+        }
+    })
+    print.forEach(line => {
+        console.log(line.join(''))
+    })
+}
+
 class WarehouseItem {
-    constructor(row, column) {
+    constructor(row, column, size) {
         this.row = row
         this.column = column
+        this.size = size
     }
 
     getGps() {
         return this.row * 100 + this.column
     }
 
-    getMapItem(direction) {
+    getPositions() {
+        if (this.size === 2) {
+            return [
+                this.row * 100 + this.column,
+                this.row * 100 + this.column + 1
+            ]
+        } else {
+            return [this.row * 100 + this.column]
+        }
+    }
+
+    getMapItems(direction) {
         switch (direction) {
-            case '<': return warehouse.get(this.getGps() - 1)
-            case '>': return warehouse.get(this.getGps() + 1)
-            case '^': return warehouse.get(this.getGps() - 100)
-            case 'v': return warehouse.get(this.getGps() + 100)
+            case '<': return [warehouse.get(this.getPositions().at(0) - 1)]
+            case '>': return [warehouse.get(this.getPositions().at(-1) + 1)]
+            case '^': return this.getPositions().map((position) => warehouse.get(position - 100))
+            case 'v': return this.getPositions().map((position) => warehouse.get(position + 100))
         }
     }
 }
@@ -34,33 +74,48 @@ class Wall extends WarehouseItem {
     }
 
     move(direction, depth) {
-        console.log(`can't move Wall at row: ${this.row}, column: ${this.column}, depth: ${depth}`)
+        console.log(`can't move Wall at row: ${this.row}, column: ${this.column}, direction: ${direction}, depth: ${depth}`)
         return false
     }
 }
 class Moveable extends WarehouseItem {
     canMove(direction, depth) {
-        const obstacle = this.getMapItem(direction)
-        if (!obstacle) return true
-        return !!obstacle.canMove(direction, depth+1)
+        let canMove = true
+        this.getMapItems(direction).forEach((item) => {
+            if (item && !item.canMove(direction, depth+1)) canMove = false
+        })
+        return canMove
     }
 
     move(direction, depth) {
-        const obstacle = this.getMapItem(direction)
-        if (obstacle && !obstacle.move(direction, depth+1)) {
-            console.log(`can't move Movable at row: ${this.row}, column: ${this.column}, direction: ${direction}, depth: ${depth}`)
-            return false
+        let willMove = true
+        let mapItems = this.getMapItems(direction)
+
+        if (mapItems.at(0) === mapItems.at(-1)) mapItems = [ mapItems[0]]
+
+        mapItems.forEach((item) => {
+            if (item && !item.move(direction, depth+1)) {
+                console.log(`can't move ${this.constructor.name} at row: ${this.row}, column: ${this.column}, direction: ${direction}, depth: ${depth}`)
+                if (this.constructor.name === 'Fish') {
+                    printWarehouse()
+                    console.log(warehouse)
+                }
+                willMove = false
+            }
+        })
+
+        if(willMove) {
+            this.getPositions().forEach(position => warehouse.delete(position))
+
+            if (direction === '<') this.column--
+            if (direction === '>') this.column++
+            if (direction === '^') this.row--
+            if (direction === 'v') this.row++
+
+            this.getPositions().forEach(position => warehouse.set(position, this))
         }
-        warehouse.delete(this.getGps())
 
-        if (direction === '<') this.column--
-        if (direction === '>') this.column++
-        if (direction === '^') this.row--
-        if (direction === 'v') this.row++
-
-        warehouse.set(this.getGps(), this)
-
-        return true
+        return willMove
     }
 }
 
@@ -75,7 +130,9 @@ class Fish extends Moveable {
 
     step() {
         const direction = this.steps.shift()
-        this.move(direction, 0)
+        if(this.canMove(direction, 0)) {
+            this.move(direction, 0)
+        }
     }
 }
 
@@ -84,32 +141,38 @@ let boxes = []
 
 map.split('\n').forEach((line, rowIndex) => {
     line.split('').forEach((position, columnIndex) => {
-        let item;
+        let items;
         if (position === '.') return
-        if (position === '#') item = new Wall(rowIndex, columnIndex)
+        if (position === '#') {
+            items = [
+                new Wall(rowIndex, columnIndex * 2, 1),
+                new Wall(rowIndex, columnIndex * 2 + 1, 1)
+            ]
+        }
         if (position === 'O') {
-            item = new Box(rowIndex, columnIndex)
-            boxes.push(item)
+            items = [new Box(rowIndex, columnIndex * 2, 2)]
+            boxes.push(items[0])
         }
         if (position === '@') {
-            item = new Fish(rowIndex, columnIndex)
-            fish = item
+            items = [new Fish(rowIndex, columnIndex * 2, 1)]
+            fish = items[0]
         }
-        if (item) {
-            warehouse.set(item.getGps(), item)
-        }
+        items.forEach((item) => {
+            if (item) {
+                item.getPositions().forEach((position) => {
+                    warehouse.set(position, item)
+                })
+            }
+        })
     })
 })
 
-fish.setSteps(moves.split('\n').join().split(''))
-
-console.log(warehouse);
+fish.setSteps(moves.split('\n').join('').split(''))
 
 while (fish.steps.length) {
     fish.step()
 }
-
-console.log(warehouse);
+printWarehouse()
 
 let sumOfBoxesGps = 0;
 
